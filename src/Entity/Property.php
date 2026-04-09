@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 class Property
@@ -14,18 +15,23 @@ class Property
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['property:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['property:list'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['property:list'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['property:list'])]
     private ?string $price = null;
 
     #[ORM\Column(length: 20)]
+    #[Groups(['property:list'])]
     private ?string $type = null;
 
     #[ORM\Column(length: 20)]
@@ -44,6 +50,7 @@ class Property
     private Collection $visits;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['property:list'])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -59,6 +66,7 @@ class Property
      * @var Collection<int, PropertyImage>
      */
     #[ORM\OneToMany(targetEntity: PropertyImage::class, mappedBy: 'property_id')]
+    #[Groups(['property:list'])]
     private Collection $propertyImages;
 
     public function __construct()

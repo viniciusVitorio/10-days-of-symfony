@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\PropertyImageRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: PropertyImageRepository::class)]
 class PropertyImage
@@ -14,6 +15,7 @@ class PropertyImage
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['property:list'])]
     private ?string $path = null;
 
     #[ORM\ManyToOne(inversedBy: 'propertyImages')]
@@ -22,6 +24,7 @@ class PropertyImage
     #[ORM\Column(nullable: true)]
     private ?int $setOrder = null;
 
+    #[Groups(['property:list'])]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $altText = null;
 
