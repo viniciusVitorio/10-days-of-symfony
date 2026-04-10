@@ -7,7 +7,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class HealthController
 {
-    #[Route('/health', name: 'health', methods: ['GET'])]
+    #[Route('/api/health', name: 'health', methods: ['GET'])]
     public function health(): JsonResponse
     {
         $health = [

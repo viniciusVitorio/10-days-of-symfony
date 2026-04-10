@@ -7,6 +7,11 @@ use App\Repository\PropertyRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class PropertyController extends AbstractController
 {
@@ -14,6 +19,7 @@ class PropertyController extends AbstractController
     public function list(PropertyRepository $repository): JsonResponse
     {
         $properties = $repository->findAll();
+
         return $this->json(
             $properties, 
             200, 
@@ -37,5 +43,63 @@ class PropertyController extends AbstractController
         return $this->json($property, 200, [], [
             'groups' => ['property:list']
         ]);
+    }
+    
+    #[Route('/api/properties', name: 'api_properties_create', methods: ['POST'])]
+    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator) : JsonResponse 
+    {
+        $property = $serializer->deserialize($request->getContent(), Property::class, 'json');
+
+        $errors = $validator->validate($property);
+
+        if (count($errors) > 0) {
+            return $this->json($errors, 400);
+        }
+
+        $em->persist($property);
+        $em->flush();
+
+        return $this->json($property, 201, [], ['groups' => ['property:list']]);
+    }
+
+    #[Route('/api/properties/{id}', name: 'api_properties_update', methods: ['PUT'])]    
+    public function update(int $id, PropertyRepository $repository, Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse {
+        $property = $repository->find($id);
+
+        if (!$property) {
+            return $this->json(['message' => 'Imóvel não encontrado'], 404);
+        }       
+        
+        $errors = $validator->validate($property);
+
+        if (count($errors) > 0) {
+            return $this->json($errors, 400);
+        }
+
+        $serializer->deserialize(
+            $request->getContent(), 
+            Property::class, 
+            'json', 
+            [AbstractNormalizer::OBJECT_TO_POPULATE => $property]
+        );
+
+        $em->flush();
+
+        return $this->json($property, 200, [], ['groups' => ['property:list']]);
+    }
+
+    #[Route('/api/properties/{id}', name: 'api_properties_delete', methods: ['DELETE'])]
+    public function delete(int $id, PropertyRepository $repository, EntityManagerInterface $em): JsonResponse
+    {
+        $property = $repository->find($id);
+
+        if (!$property) {
+            return $this->json(['message' => 'Imóvel não encontrado'], 404);
+        }
+
+        $em->remove($property);
+        $em->flush();
+
+        return $this->json(null, 204);
     }
 }

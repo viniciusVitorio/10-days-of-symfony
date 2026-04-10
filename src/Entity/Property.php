@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 class Property
@@ -19,22 +20,34 @@ class Property
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(['message' => 'The title is required.'])]
+    #[Assert\Length(['min' => 5, 'minMessage' => 'Title must be at least 5 characters.'])]
     #[Groups(['property:list'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(['message' => 'Description is required.'])]
     #[Groups(['property:list'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotBlank(['message' => 'Price is required.'])]
+    #[Assert\Positive(['message' => 'The price must be greater than zero.'])]
+    #[Assert\Type(['type' => 'numeric', 'message' => 'The price must be a number.'])]
     #[Groups(['property:list'])]
     private ?string $price = null;
 
     #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(['message' => 'Type is required.'])]
     #[Groups(['property:list'])]
     private ?string $type = null;
 
     #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(['message' => 'Status is required.'])]
+    #[Assert\Choice([
+        'choices' => ['available', 'sold', 'rented'],
+        'message' => 'Invalid status.'
+    ])]
     private ?string $status = null;
 
     #[ORM\Column]
@@ -43,13 +56,11 @@ class Property
     #[ORM\ManyToOne(inversedBy: 'properties')]
     private ?User $user_id = null;
 
-    /**
-     * @var Collection<int, Visit>
-     */
     #[ORM\OneToMany(targetEntity: Visit::class, mappedBy: 'property_id')]
     private Collection $visits;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(['message' => 'Slug is required.'])]
     #[Groups(['property:list'])]
     private ?string $slug = null;
 
@@ -57,15 +68,13 @@ class Property
     private ?string $content = null;
 
     #[ORM\Column]
-    private ?bool $isPublished = null;
+    #[Assert\NotNull(message: 'Publish status is required.')]
+    private ?bool $isPublished = false;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $mainImage = null;
 
-    /**
-     * @var Collection<int, PropertyImage>
-     */
-    #[ORM\OneToMany(targetEntity: PropertyImage::class, mappedBy: 'property_id')]
+    #[ORM\OneToMany(mappedBy: 'property_id', targetEntity: PropertyImage::class, cascade: ['remove'])]
     #[Groups(['property:list'])]
     private Collection $propertyImages;
 
@@ -73,6 +82,7 @@ class Property
     {
         $this->visits = new ArrayCollection();
         $this->propertyImages = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int

@@ -18,7 +18,7 @@ class PropertyImage
     #[Groups(['property:list'])]
     private ?string $path = null;
 
-    #[ORM\ManyToOne(inversedBy: 'propertyImages')]
+    #[ORM\ManyToOne(targetEntity: Property::class, inversedBy: 'propertyImages')]
     private ?Property $property_id = null;
 
     #[ORM\Column(nullable: true)]
