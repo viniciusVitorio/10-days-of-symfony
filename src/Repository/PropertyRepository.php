@@ -16,28 +16,40 @@ class PropertyRepository extends ServiceEntityRepository
         parent::__construct($registry, Property::class);
     }
 
-    //    /**
-    //     * @return Property[] Returns an array of Property objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findByFilters(array $filters, int $page = 1, int $limit = 10): array
+    {
+        $queryBuilder = $this->createQueryBuilder('property')
+            ->leftJoin('property.propertyImages', 'pi')
+            ->addSelect('pi')
+            ->andWhere('property.isPublished = :published')
+            ->setParameter('published', true);
 
-    //    public function findOneBySomeField($value): ?Property
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if (!empty($filters['type'])) {
+            $queryBuilder->andWhere('property.type = :type')
+            ->setParameter('type', $filters['type']);
+        }
+
+        if (!empty($filters['minPrice'])) {
+            $queryBuilder->andWhere('property.price >= :minPrice')
+            ->setParameter('minPrice', $filters['minPrice']);
+        }
+
+        $offset = ($page - 1) * $limit;
+
+        $queryBuilder->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('property.createdAt', 'DESC');
+
+        $totalItems = count($this->findAll());
+
+        return [
+            'data' => $queryBuilder->getQuery()->getResult(),
+            'meta' => [
+                'total' => $totalItems,
+                'page' => $page,
+                'limit' => $limit,
+                'pages' => ceil($totalItems / $limit)
+            ]
+        ];
+    }
 }

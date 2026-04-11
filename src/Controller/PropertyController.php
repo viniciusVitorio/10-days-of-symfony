@@ -16,9 +16,14 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 class PropertyController extends AbstractController
 {
     #[Route('/api/properties', name: 'api_properties_list', methods: ['GET'])]
-    public function list(PropertyRepository $repository): JsonResponse
+    public function list(PropertyRepository $repository, Request $request): JsonResponse
     {
-        $properties = $repository->findAll();
+        $filters = $request->query->all();
+
+        $page = $request->query->getInt('page', 1);
+        $limit = $request->query->getInt('limit', 10);
+
+        $properties = $repository->findByFilters($filters, $page, $limit);
 
         return $this->json(
             $properties, 
