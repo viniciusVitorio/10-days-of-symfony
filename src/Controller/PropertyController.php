@@ -12,18 +12,17 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use App\Dto\PropertySearchDto;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 
 class PropertyController extends AbstractController
 {
     #[Route('/api/properties', name: 'api_properties_list', methods: ['GET'])]
-    public function list(PropertyRepository $repository, Request $request): JsonResponse
-    {
-        $filters = $request->query->all();
+    public function list(PropertyRepository $repository, #[MapQueryString] ?PropertySearchDto $searchDto): JsonResponse 
+    {    
+        $searchDto ??= new PropertySearchDto();
 
-        $page = $request->query->getInt('page', 1);
-        $limit = $request->query->getInt('limit', 10);
-
-        $properties = $repository->findByFilters($filters, $page, $limit);
+        $properties = $repository->findByFilters($searchDto);
 
         return $this->json(
             $properties, 

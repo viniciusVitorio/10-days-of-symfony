@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Property;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Dto\PropertySearchDto;
 
 /**
  * @extends ServiceEntityRepository<Property>
@@ -16,39 +17,34 @@ class PropertyRepository extends ServiceEntityRepository
         parent::__construct($registry, Property::class);
     }
 
-    public function findByFilters(array $filters, int $page = 1, int $limit = 10): array
+    public function findByFilters(PropertySearchDto $filters): array
     {
-        $queryBuilder = $this->createQueryBuilder('property')
+        $qb = $this->createQueryBuilder('property')
             ->leftJoin('property.propertyImages', 'pi')
             ->addSelect('pi')
             ->andWhere('property.isPublished = :published')
             ->setParameter('published', true);
 
-        if (!empty($filters['type'])) {
-            $queryBuilder->andWhere('property.type = :type')
-            ->setParameter('type', $filters['type']);
+        if ($filters->type) {
+            $qb->andWhere('property.type = :type')
+            ->setParameter('type', $filters->type);
         }
 
-        if (!empty($filters['minPrice'])) {
-            $queryBuilder->andWhere('property.price >= :minPrice')
-            ->setParameter('minPrice', $filters['minPrice']);
+        if ($filters->minPrice) {
+            $qb->andWhere('property.price >= :minPrice')
+            ->setParameter('minPrice', $filters->minPrice);
         }
 
-        $offset = ($page - 1) * $limit;
-
-        $queryBuilder->setFirstResult($offset)
-            ->setMaxResults($limit)
-            ->orderBy('property.createdAt', 'DESC');
-
-        $totalItems = count($this->findAll());
+        $qb->setFirstResult(($filters->page - 1) * $filters->limit)
+        ->setMaxResults($filters->limit)
+        ->orderBy('property.createdAt', 'DESC');
 
         return [
-            'data' => $queryBuilder->getQuery()->getResult(),
+            'data' => $qb->getQuery()->getResult(),
             'meta' => [
-                'total' => $totalItems,
-                'page' => $page,
-                'limit' => $limit,
-                'pages' => ceil($totalItems / $limit)
+                'total' => count($this->findAll()),
+                'page' => $filters->page,
+                'limit' => $filters->limit
             ]
         ];
     }
