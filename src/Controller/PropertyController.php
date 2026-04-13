@@ -3,7 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Property;
+use App\Entity\PropertyImage;
 use App\Repository\PropertyRepository;
+use App\Dto\PropertySearchDto;
+use App\Service\FileUploader;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,8 +15,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use App\Dto\PropertySearchDto;
 use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class PropertyController extends AbstractController
 {
@@ -105,5 +108,39 @@ class PropertyController extends AbstractController
         $em->flush();
 
         return $this->json(null, 204);
+    }
+
+    #[Route('/api/properties/{id}/images', name: 'api_properties_add_image', methods: ['POST'])]
+    public function addImage(
+        int $id, 
+        PropertyRepository $repository, 
+        Request $request, 
+        EntityManagerInterface $em, 
+        FileUploader $uploader
+    ): JsonResponse {
+        $property = $repository->find($id);
+
+        if (!$property) {
+            return $this->json(['message' => 'Imóvel não encontrado'], 404);
+        }
+
+        /** @var UploadedFile $file */
+        $file = $request->files->get('image');
+
+        if (!$file) {
+            return $this->json(['message' => 'Nenhum arquivo enviado'], 400);
+        }
+
+        $newFilename = $uploader->upload($file);
+
+        $propertyImage = new PropertyImage();
+        $propertyImage->setPath($newFilename);
+        $propertyImage->setPropertyId($property);
+        $propertyImage->setAltText('Imagem de ' . $property->getTitle());
+
+        $em->persist($propertyImage);
+        $em->flush();
+
+        return $this->json($propertyImage, 201, [], ['groups' => ['property:list']]);
     }
 }
