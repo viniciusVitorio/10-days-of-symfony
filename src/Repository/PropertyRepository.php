@@ -48,4 +48,35 @@ class PropertyRepository extends ServiceEntityRepository
             ]
         ];
     }
+
+    public function getDashboardStats(): array
+    {
+        $statusStats = $this->createQueryBuilder('p')
+            ->select('p.status, COUNT(p.id) as count')
+            ->groupBy('p.status')
+            ->getQuery()
+            ->getResult();
+
+        $metrics = $this->createQueryBuilder('p')
+            ->select('SUM(p.price) as totalValue, AVG(p.price) as avgPrice, COUNT(p.id) as totalItems')
+            ->getQuery()
+            ->getSingleResult();
+
+        $topProperties = $this->createQueryBuilder('p')
+            ->select('p.id, p.title, p.price')
+            ->orderBy('p.price', 'DESC')
+            ->setMaxResults(3)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'byStatus' => $statusStats,
+            'financial' => [
+                'total_value' => (float) $metrics['totalValue'],
+                'avg_price' => (float) $metrics['avgPrice'],
+                'total_items' => (int) $metrics['totalItems'],
+            ],
+            'top_expensive' => $topProperties
+        ];
+    }
 }
